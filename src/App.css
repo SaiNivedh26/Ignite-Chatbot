@@ -38,6 +38,60 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+.gift-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  background-color: rgba(240, 248, 255, 0.1);
+}
+
+.gift-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.gift-container:hover {
+  transform: scale(1.05);
+}
+
+.gift-icon {
+  animation: bounce 1.5s infinite;
+}
+
+.ribbon-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  animation: wiggle 1s infinite;
+}
+
+.gift-text {
+  margin-top: 10px;
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+  40% {transform: translateY(-20px);}
+  60% {transform: translateY(-10px);}
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
 /* Sidebar styles */
 .sidebar {
   width: var(--sidebar-width);

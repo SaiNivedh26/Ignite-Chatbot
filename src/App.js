@@ -1,25 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  MessageCircle, 
-  Send, 
-  Loader, 
-  Moon, 
-  Sun, 
-  Settings,
-  Heart,
-  Activity,
-  Apple,
-  Pill,
-  Brain,
-  Coffee,
-  Cookie,
-  ChevronRight,
-  ChevronLeft,
-  Globe,
-  Database,
-  Download,
-  FileText
-} from 'lucide-react';
+import { MessageCircle, Send, Loader, Moon, Sun, Heart, Lock, Unlock, ChevronRight, ChevronLeft, Ribbon, Globe, Database, FileText } from 'lucide-react';
 
 import './App.css';
 import MarkdownRenderer from './components/MarkdownRenderer';
@@ -28,25 +8,29 @@ import MarkdownRenderer from './components/MarkdownRenderer';
 const PROMPT_SUGGESTIONS = [
   {
     id: 1,
-    icon: <Apple className="w-4 h-4" />,
+    lockedIcon: <Lock className="w-6 h-6 text-blue-500" />,
+    unlockedIcon: <Unlock className="w-6 h-6 text-blue-500" />,
     title: "Level 1",
     prompt: ""
   },
   {
     id: 2,
-    icon: <Activity className="w-4 h-4" />,
+    lockedIcon: <Lock className="w-6 h-6 text-green-500" />,
+    unlockedIcon: <Unlock className="w-6 h-6 text-green-500" />,
     title: "Level 2",
     prompt: ""
   },
   {
     id: 3,
-    icon: <Brain className="w-4 h-4" />,
+    lockedIcon: <Lock className="w-6 h-6 text-purple-500" />,
+    unlockedIcon: <Unlock className="w-6 h-6 text-purple-500" />,
     title: "Level 3",
     prompt: ""
   },
   {
     id: 4,
-    icon: <Coffee className="w-4 h-4" />,
+    lockedIcon: <Lock className="w-6 h-6 text-red-500" />,
+    unlockedIcon: <Unlock className="w-6 h-6 text-red-500" />,
     title: "Level 4",
     prompt: ""
   }
@@ -64,6 +48,28 @@ export default function App() {
   const [chatHistory, setChatHistory] = useState([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
   
+  const [unlockedLevels, setUnlockedLevels] = useState({
+    1: false,
+    2: false,
+    3: false,
+    4: false
+  });
+  
+  const initialState = 0; // Or whatever initial value is appropriate
+  const [currentLevel, setCurrentLevel] = useState(initialState);
+
+  const [unwrappedLevels, setUnwrappedLevels] = useState(initialState);
+
+
+  const handleLevelUnlock = (levelId) => {
+    // Toggle lock/unlock state when a level is clicked
+    setUnlockedLevels(prev => ({
+      ...prev,
+      [levelId]: !prev[levelId]  
+    }));
+    setCurrentLevel(levelId);
+  };
+
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -74,6 +80,7 @@ export default function App() {
       fetchChatHistory();
     }
   }, [messages, isDarkMode, isModalOpen]);
+
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -121,12 +128,16 @@ export default function App() {
     }
   };
   
-  const handlePromptClick = (prompt) => {
-    setQuery(prompt);
-    if (window.innerWidth <= 768) {
-      setSidebarOpen(false);
+  const handlePromptClick = (prompt, level) => {
+    if (unlockedLevels[level]) {
+      setQuery(prompt);
+      setCurrentLevel(level);
+      if (window.innerWidth <= 768) {
+        setSidebarOpen(false);
+      }
     }
   };
+
 
   const fetchChatHistory = async () => {
     try {
@@ -225,26 +236,41 @@ export default function App() {
 
         <div className="prompts-list">
           {PROMPT_SUGGESTIONS.map((suggestion) => (
-            <button
-              key={suggestion.id}
-              className="prompt-suggestion-item"
-              onClick={() => handlePromptClick(suggestion.prompt)}
+            <div 
+              key={suggestion.id} 
+              className="prompt-suggestion-item-container relative group"
             >
-              <div className="prompt-icon">
-                {suggestion.icon}
-              </div>
-              <div className="prompt-content">
-                <div className="prompt-title">{suggestion.title}</div>
-                <div className="prompt-preview">
-                  {suggestion.prompt.length > 40 
-                    ? `${suggestion.prompt.substring(0, 40)}...` 
-                    : suggestion.prompt}
+              <button
+                className={`prompt-suggestion-item ${unlockedLevels[suggestion.id] ? 'unlocked' : 'locked'}`}
+                onClick={() => {
+                  handlePromptClick(suggestion.prompt, suggestion.id);
+                  handleLevelUnlock(suggestion.id);
+                }}
+              >
+                <div 
+                  className="prompt-icon"
+                  onClick={() => handleLevelUnlock(suggestion.id)}
+                >
+                  {unlockedLevels[suggestion.id] 
+                    ? suggestion.unlockedIcon 
+                    : suggestion.lockedIcon}
                 </div>
-              </div>
-            </button>
+                <div className="prompt-content">
+                  <div className="prompt-title">
+                    {suggestion.title}
+                  </div>
+                  <div className="prompt-preview">
+                    {unlockedLevels[suggestion.id] 
+                      ? (suggestion.prompt.length > 40 
+                        ? `${suggestion.prompt.substring(0, 40)}...` 
+                        : suggestion.prompt)
+                      : "Locked - Click to Unlock"}
+                  </div>
+                </div>
+              </button>
+            </div>
           ))}
         </div>
-
         <div className="sidebar-footer">
           <button 
             className="theme-toggle"
@@ -327,7 +353,7 @@ export default function App() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Type your medical question..."
+              placeholder="Type your argument"
               className="message-input"
             />
             <button
@@ -394,3 +420,4 @@ export default function App() {
     </div>
   );
 }
+
