@@ -278,9 +278,7 @@ export default function App() {
           >
             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          <button className="settings-button" onClick={toggleModal}>
-            View Chat History
-          </button>
+          
         </div>
       </div>
 
