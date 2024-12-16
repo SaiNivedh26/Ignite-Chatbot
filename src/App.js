@@ -4,83 +4,61 @@ import { MessageCircle, Send, Loader, Moon, Sun, Heart, Lock, Unlock, ChevronRig
 import './App.css';
 import MarkdownRenderer from './components/MarkdownRenderer';
 
-// Predefined prompt suggestions
-const PROMPT_SUGGESTIONS = [
-  {
-    id: 1,
-    lockedIcon: <Lock className="w-6 h-6 text-blue-500" />,
-    unlockedIcon: <Unlock className="w-6 h-6 text-blue-500" />,
-    title: "Level 1",
-    prompt: ""
-  },
-  {
-    id: 2,
-    lockedIcon: <Lock className="w-6 h-6 text-green-500" />,
-    unlockedIcon: <Unlock className="w-6 h-6 text-green-500" />,
-    title: "Level 2",
-    prompt: ""
-  },
-  {
-    id: 3,
-    lockedIcon: <Lock className="w-6 h-6 text-purple-500" />,
-    unlockedIcon: <Unlock className="w-6 h-6 text-purple-500" />,
-    title: "Level 3",
-    prompt: ""
-  },
-  {
-    id: 4,
-    lockedIcon: <Lock className="w-6 h-6 text-red-500" />,
-    unlockedIcon: <Unlock className="w-6 h-6 text-red-500" />,
-    title: "Level 4",
-    prompt: ""
-  }
-];
+// Prompt Templates for Different Levels
+const PROMPT_TEMPLATES = {
+  1: `You are a CEO at the leadership Level 1 (Foundational Leadership). 
+Evaluate the team's argument focusing on:
+- Resilience and adaptability
+- Trust-building communication
+- Team collaboration potential
+Provide constructive feedback that encourages growth and learning.`,
+
+  2: `You are a CEO at the leadership Level 2 (Strategic and Decisive Leadership). 
+Evaluate the team's argument considering:
+- Alignment with company's short and long-term goals
+- Data-driven decision making
+- Strategic market positioning
+- Stakeholder perspectives and potential impact`,
+
+  3: `You are a CEO at the leadership Level 3 (Adaptive and Innovative Leadership). 
+Critically analyze the team's argument by examining:
+- Continuous learning and improvement
+- Resilience during uncertainty
+- Innovative problem-solving approaches
+- Adaptability to changing business landscapes`,
+
+  4: `You are a CEO at the leadership Level 4 (Visionary and Customer-Centric Leadership). 
+Comprehensively assess the team's argument through the lens of:
+- Disruptive and creative solutions
+- Global cultural sensitivity
+- Sustainability and social responsibility
+- Customer-centric innovation
+- Long-term brand and societal impact`
+};
 
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isWebScraping, setIsWebScraping] = useState(false);
-  const [isRAGRetrieval, setIsRAGRetrieval] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
-  const [isSummarizing, setIsSummarizing] = useState(false);
   
   const [unlockedLevels, setUnlockedLevels] = useState({
-    1: false,
+    1: true,  // First level is always unlocked
     2: false,
     3: false,
     4: false
   });
   
-  const initialState = 0; // Or whatever initial value is appropriate
-  const [currentLevel, setCurrentLevel] = useState(initialState);
-
-  const [unwrappedLevels, setUnwrappedLevels] = useState(initialState);
-
-
-  const handleLevelUnlock = (levelId) => {
-    // Toggle lock/unlock state when a level is clicked
-    setUnlockedLevels(prev => ({
-      ...prev,
-      [levelId]: !prev[levelId]  
-    }));
-    setCurrentLevel(levelId);
-  };
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [currentPrompt, setCurrentPrompt] = useState(PROMPT_TEMPLATES[1]);
 
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     document.body.classList.toggle('dark-mode', isDarkMode);
-    
-    if (isModalOpen) {
-      fetchChatHistory();
-    }
-  }, [messages, isDarkMode, isModalOpen]);
-
+  }, [messages, isDarkMode]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -92,29 +70,22 @@ export default function App() {
     setIsLoading(true);
   
     try {
-      const response = await fetch(`http://localhost:8000/search?query=${encodeURIComponent(query)}`);
+      const response = await fetch('http://127.0.0.1:5000/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: `${currentPrompt}\n\nTeam Argument: ${query}`,
+          level: currentLevel
+        })
+      });
+
       const data = await response.json();
   
-      if (data.webscraping) {
-        setIsWebScraping(true);
-        setMessages((prev) => [
-          ...prev,
-          { text: "Web scraping in progress...", sender: 'bot', isWebScraping: true }
-        ]);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      } else if (data.ragRetrieval) {
-        setIsRAGRetrieval(true);
-        setMessages((prev) => [
-          ...prev,
-          { text: "Retrieving information from knowledge base...", sender: 'bot', isRAGRetrieval: true }
-        ]);
-      }
-  
-      await new Promise(resolve => setTimeout(resolve, 3000));
-  
       setMessages((prev) => [
-        ...prev.filter(msg => !msg.isWebScraping && !msg.isRAGRetrieval),
-        { text: data.message, sender: 'bot' }
+        ...prev,
+        { text: data.response, sender: 'bot' }
       ]);
     } catch (error) {
       setMessages((prev) => [
@@ -123,29 +94,39 @@ export default function App() {
       ]);
     } finally {
       setIsLoading(false);
-      setIsWebScraping(false);
-      setIsRAGRetrieval(false);
     }
   };
   
   const handlePromptClick = (prompt, level) => {
     if (unlockedLevels[level]) {
-      setQuery(prompt);
+      setCurrentPrompt(prompt);
       setCurrentLevel(level);
+      setQuery('');
       if (window.innerWidth <= 768) {
         setSidebarOpen(false);
       }
     }
   };
 
+  const handleLevelUnlock = (levelId) => {
+    if (levelId > currentLevel) {
+      // Only allow unlocking next sequential level
+      const previousLevelUnlocked = Object.keys(unlockedLevels)
+        .filter(key => parseInt(key) < levelId)
+        .every(key => unlockedLevels[key]);
 
-  const fetchChatHistory = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/chat-history');
-      const data = await response.json();
-      setChatHistory(data.history);
-    } catch (error) {
-      console.error('Error fetching chat history:', error);
+      if (previousLevelUnlocked) {
+        setUnlockedLevels(prev => ({
+          ...prev,
+          [levelId]: true
+        }));
+        setCurrentLevel(levelId);
+        setCurrentPrompt(PROMPT_TEMPLATES[levelId]);
+      }
+    } else {
+      // If lower or same level, just switch
+      setCurrentLevel(levelId);
+      setCurrentPrompt(PROMPT_TEMPLATES[levelId]);
     }
   };
 
@@ -153,68 +134,37 @@ export default function App() {
     setSidebarOpen(!isSidebarOpen);
   };
 
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
-
-  const exportHistory = async () => {
-    try {
-      setIsSummarizing(true);
-      
-      // First, call the summarization endpoint
-      const summaryResponse = await fetch('http://localhost:8000/summarize-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ chat_history: chatHistory }),
-      });
-  
-      if (!summaryResponse.ok) {
-        const errorData = await summaryResponse.json();
-        throw new Error(errorData.detail || 'Failed to generate summary');
-      }
-  
-      const summaryData = await summaryResponse.json();
-      const { pdf_filename } = summaryData;
-  
-      if (!pdf_filename) {
-        throw new Error('No PDF filename received from server');
-      }
-  
-      // Get the PDF file using the filename
-      const pdfResponse = await fetch(`http://localhost:8000/get-pdf/${pdf_filename}`);
-      if (!pdfResponse.ok) {
-        const errorData = await pdfResponse.json();
-        throw new Error(errorData.detail || 'Failed to download PDF');
-      }
-  
-      const pdfBlob = await pdfResponse.blob();
-      
-      // Check if the blob is empty or invalid
-      if (pdfBlob.size === 0) {
-        throw new Error('Generated PDF is empty');
-      }
-  
-      const url = URL.createObjectURL(pdfBlob);
-      
-      // Create a link element and trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'chat_summary.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-  
-    } catch (error) {
-      console.error('Error during export:', error);
-      alert(`Export failed: ${error.message}. Please try again.`);
-    } finally {
-      setIsSummarizing(false);
+  const PROMPT_SUGGESTIONS = [
+    {
+      id: 1,
+      lockedIcon: <Lock className="w-6 h-6 text-blue-500" />,
+      unlockedIcon: <Unlock className="w-6 h-6 text-blue-500" />,
+      title: "Level 1",
+      prompt: PROMPT_TEMPLATES[1]
+    },
+    {
+      id: 2,
+      lockedIcon: <Lock className="w-6 h-6 text-green-500" />,
+      unlockedIcon: <Unlock className="w-6 h-6 text-green-500" />,
+      title: "Level 2",
+      prompt: PROMPT_TEMPLATES[2]
+    },
+    {
+      id: 3,
+      lockedIcon: <Lock className="w-6 h-6 text-purple-500" />,
+      unlockedIcon: <Unlock className="w-6 h-6 text-purple-500" />,
+      title: "Level 3",
+      prompt: PROMPT_TEMPLATES[3]
+    },
+    {
+      id: 4,
+      lockedIcon: <Lock className="w-6 h-6 text-red-500" />,
+      unlockedIcon: <Unlock className="w-6 h-6 text-red-500" />,
+      title: "Level 4",
+      prompt: PROMPT_TEMPLATES[4]
     }
-  };
-  
+  ];
+
   return (
     <div className={`app-container ${isDarkMode ? 'dark-theme' : ''}`}>
       {/* Sidebar with toggle */}
@@ -241,7 +191,9 @@ export default function App() {
               className="prompt-suggestion-item-container relative group"
             >
               <button
-                className={`prompt-suggestion-item ${unlockedLevels[suggestion.id] ? 'unlocked' : 'locked'}`}
+                className={`prompt-suggestion-item 
+                  ${unlockedLevels[suggestion.id] ? 'unlocked' : 'locked'}
+                  ${currentLevel === suggestion.id ? 'active' : ''}`}
                 onClick={() => {
                   handlePromptClick(suggestion.prompt, suggestion.id);
                   handleLevelUnlock(suggestion.id);
@@ -278,7 +230,6 @@ export default function App() {
           >
             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          
         </div>
       </div>
 
@@ -291,8 +242,8 @@ export default function App() {
               <h1 className="app-title">CEO LLM Chatbot</h1>
             </div>
             <div className="header-pills">
-              <span className="status-pill">AI powered</span>
-              <span className="feature-pill">built by Tensor Club</span>
+              <span className="status-pill">Level {currentLevel}</span>
+              <span className="feature-pill">Leadership Simulation</span>
             </div>
           </div>
 
@@ -303,17 +254,7 @@ export default function App() {
                 className={`message-wrapper ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
               >
                 <div className="message-content">
-                  {message.isWebScraping ? (
-                    <div className="web-scraping-indicator">
-                      <Globe className="w-6 h-6 text-blue-500 animate-spin" />
-                      <span>{message.text}</span>
-                    </div>
-                  ) : message.isRAGRetrieval ? (
-                    <div className="rag-retrieval-indicator">
-                      <Database className="w-6 h-6 text-green-500 animate-pulse" />
-                      <span>{message.text}</span>
-                    </div>
-                  ) : message.sender === 'bot' ? (
+                  {message.sender === 'bot' ? (
                     <MarkdownRenderer content={message.text} />
                   ) : (
                     message.text
@@ -325,7 +266,7 @@ export default function App() {
               </div>
             ))}
 
-            {isLoading && !isWebScraping && !isRAGRetrieval && (
+            {isLoading && (
               <div className="bot-message">
                 <div className="typing-indicator">
                   <span></span>
@@ -339,8 +280,8 @@ export default function App() {
                 <div className="empty-state-icon">
                   <Heart className="w-12 h-12 text-blue-400" />
                 </div>
-                <h3>Start Your Query</h3>
-                <p>Give in the prompts provided by the Team members and lemme have a look </p>
+                <h3>Start Your Leadership Challenge</h3>
+                <p>Select a leadership level and submit your team's argument</p>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -351,7 +292,7 @@ export default function App() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Type your argument"
+              placeholder={`Level ${currentLevel} Team Argument`}
               className="message-input"
             />
             <button
@@ -368,54 +309,6 @@ export default function App() {
           </form>
         </div>
       </div>
-
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="modal-overlay" onClick={(e) => {
-          if (e.target.classList.contains('modal-overlay')) {
-            setIsModalOpen(false);
-          }
-        }}>
-          <div className="modal-content">
-            <h2>Chat History</h2>
-            {chatHistory.length === 0 ? (
-              <p>No chat history available.</p>
-            ) : (
-              chatHistory.map((entry, index) => (
-                <div key={index} className="history-entry">
-                  <strong>{entry.role === 'user' ? 'You:' : 'Bot:'}</strong> {entry.content}
-                </div>
-              ))
-            )}
-            <div className="modal-buttons">
-              <button 
-                className="modal-button export-button"
-                onClick={exportHistory}
-                disabled={isSummarizing || chatHistory.length === 0}
-              >
-                {isSummarizing ? (
-                  <>
-                    <Loader className="w-4 h-4 mr-2 animate-spin" />
-                    Summarizing...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Export Summary
-                  </>
-                )}
-              </button>
-              <button 
-                className="modal-button close-button"
-                onClick={() => setIsModalOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
