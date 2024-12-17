@@ -18,7 +18,7 @@ groq_api_key = os.environ['GROQ_API_KEY']
 
 # Prompt Templates
 LEVEL_PROMPTS = {
-    1: """You are a CEO conducting a leadership evaluation at Level 1 (Foundational Leadership).
+    1: """You are a well experienced CEO conducting a leadership evaluation at Level 1 (Foundational Leadership).
 
 TEAM ARGUMENTS:
 {team_inputs}
@@ -48,7 +48,7 @@ FINAL ANALYSIS:
 - Rank teams based on total scores
 - Highlight top performers and those needing immediate intervention""",
 
-    2: """You are a CEO conducting a strategic leadership evaluation at Level 2 (Strategic and Decisive Leadership).
+    2: """You are a well experienced CEO conducting a strategic leadership evaluation at Level 2 (Strategic and Decisive Leadership).
 
 TEAM ARGUMENTS:
 {team_inputs}
@@ -77,7 +77,7 @@ STRATEGIC RECOMMENDATION:
 - Identification of top-performing teams
 - Targeted improvement suggestions for each team""",
 
-    3: """You are a CEO conducting an advanced leadership evaluation at Level 3 (Adaptive and Innovative Leadership).
+    3: """You are a well experienced CEO conducting an advanced leadership evaluation at Level 3 (Adaptive and Innovative Leadership).
 
 TEAM ARGUMENTS:
 {team_inputs}
@@ -107,7 +107,7 @@ TRANSFORMATIVE INSIGHTS:
 - Identify breakthrough potential
 - Provide strategic development pathways""",
 
-    4: """You are a CEO conducting a visionary leadership evaluation at Level 4 (Visionary and Customer-Centric Leadership).
+    4: """You are a well experienced CEO conducting a visionary leadership evaluation at Level 4 (Visionary and Customer-Centric Leadership).
 
 TEAM ARGUMENTS:
 {team_inputs}
@@ -197,9 +197,7 @@ def ask():
     # Initialize Groq LLM
     groq_chat = ChatGroq(
         groq_api_key=groq_api_key,
-        #model_name='mixtral-8x7b-32768'
-        model_name='llama3-8b-8192'
-
+        model_name='mixtral-8x7b-32768'
     )
 
     # Create a prompt template for the specific leadership level
