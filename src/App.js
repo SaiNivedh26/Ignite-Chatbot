@@ -70,7 +70,7 @@ export default function App() {
     setIsLoading(true);
   
     try {
-      const response = await fetch('http://127.0.0.1:5000/ask', {
+      const response = await fetch('https://ignite-backend-0uxt.onrender.com/ask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
